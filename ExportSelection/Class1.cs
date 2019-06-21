@@ -29,6 +29,7 @@ namespace WBlock
             foreach (ObjectId id in objIdArray)
                 objIds.Add(id);
 
+            
             var pStrOpts = new PromptStringOptions("Digite o nome do novo documento: ");
             pStrOpts.AllowSpaces = true;
             using (Database newDb = new Database(true, false))
@@ -36,7 +37,7 @@ namespace WBlock
                 PromptResult pStrRes = doc.Editor.GetString(pStrOpts);
                 db.Wblock(newDb, objIds, Point3d.Origin,
                                             DuplicateRecordCloning.Ignore);
-                string FileName = "C:\\Users\\Asus\\Documents\\" + pStrRes.StringResult + ".dwg"; // i need to change the name of the new file !!!!!!!!!!!!!!!W
+                string FileName = Application.GetSystemVariable("DWGPREFIX") + pStrRes.StringResult + ".dwg";
                 newDb.SaveAs(FileName, DwgVersion.Newest);
             }            
         }
