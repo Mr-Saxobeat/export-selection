@@ -73,9 +73,9 @@ namespace WBlock
                 // used to move the selected objects.
                 Vector3d acVec3d = minExPt.GetVectorTo(Point3d.Origin);
 
-                foreach (ObjectId ob in objIds)
+                foreach (ObjectId objId in objIds)
                 {
-                    Entity e = trMoveToOrigin.GetObject(ob, OpenMode.ForWrite) as Entity;
+                    Entity e = trMoveToOrigin.GetObject(objId, OpenMode.ForWrite) as Entity;
                     e.TransformBy(Matrix3d.Displacement(acVec3d));
                 }
 
