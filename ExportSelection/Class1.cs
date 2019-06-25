@@ -7,16 +7,37 @@ using Autodesk.AutoCAD.Geometry;
 
 namespace WBlock
 {
-    public static class wBlockEntity
+    // A simple extension method that aggregates the extents of any entities
+    // passed in (via their ObjectIds)
+    // https://www.keanw.com/2015/07/getting-the-extents-of-an-autocad-group-using-net.html
+    public static class TransactionExtensions
     {
-        [CommandMethod("wblockEntity")]
-        public static void wblockEntity()
+        public static Extents3d GetExtents(this Transaction tr, ObjectId[] ids)
+        {
+            var ext = new Extents3d();
+            foreach (var id in ids)
+            {
+                var ent = tr.GetObject(id, OpenMode.ForRead) as Entity;
+                if (ent != null)
+                {
+                    ext.AddExtents(ent.GeometricExtents);
+                }
+            }
+            return ext;
+        }
+    }
+
+    public static class Main
+    {
+        [CommandMethod("ExportSelection")]
+        public static void ExportSelection()
         {
             // Get the document, the database and the editor object
             Document doc = Application.DocumentManager.MdiActiveDocument;
             Database db = doc.Database;
             Editor ed = doc.Editor;
 
+            // Prompt to user select objects
             var PrpSelOpts = new PromptSelectionOptions();
             PrpSelOpts.MessageForAdding = "Selecione os objetos: ";
             PromptSelectionResult prRes = ed.GetSelection(PrpSelOpts);
@@ -31,8 +52,8 @@ namespace WBlock
             foreach (ObjectId id in objIdArray)
                 objIds.Add(id);
 
-            // Set the GetString method to get a new file name by user
-            var pStrOpts = new PromptStringOptions("Digite o nome do novo documento: ");
+            // Prompt user to type a name to the new drawing
+            var pStrOpts = new PromptStringOptions("\nDigite o nome do novo documento: ");
             pStrOpts.AllowSpaces = true;
             PromptResult pStrRes = doc.Editor.GetString(pStrOpts);
 
@@ -40,40 +61,41 @@ namespace WBlock
             // in the same folder of the current file.
             string FileName = Application.GetSystemVariable("DWGPREFIX") + pStrRes.StringResult + ".dwg";
 
-            // Create a new external database, where the
-            // exported objects will be created.
-            using (var newDb = new Database(true, false))
-            {    
-                db.Wblock(newDb, objIds, Point3d.Origin,
-                                            DuplicateRecordCloning.Ignore);
-                newDb.SaveAs(FileName, DwgVersion.Newest);
-            }
-
-            // Here the objects on the new database
-            // will be moved to the origin point.
-            using (var exDb = new Database(false, false))
+            using (var trMoveToOrigin = db.TransactionManager.StartTransaction())
             {
-                try
+                // Get the extents points 
+                // of the selected objects.
+                var extPts = trMoveToOrigin.GetExtents(objIdArray);
+                var minExPt = extPts.MinPoint;
+
+                // Get vector from minimal extent point
+                // to the origin point, that will be
+                // used to move the selected objects.
+                Vector3d acVec3d = minExPt.GetVectorTo(Point3d.Origin);
+
+                foreach (ObjectId ob in objIds)
                 {
-                    exDb.ReadDwgFile(FileName, FileOpenMode.OpenForReadAndWriteNoShare, false, "");
-                }
-                catch (System.Exception)
-                {
-                    ed.WriteMessage("\nUnable to read drawing file.");
+                    Entity e = trMoveToOrigin.GetObject(ob, OpenMode.ForWrite) as Entity;
+                    e.TransformBy(Matrix3d.Displacement(acVec3d));
                 }
 
-                using (var exTr = exDb.TransactionManager.StartTransaction())
+                // Create a new external database, where the
+                // exported objects will be created.
+                using (var newDb = new Database(true, false))
                 {
-                    // Open the Block table record for read
-                    BlockTable exBlkTbl;
-                    exBlkTbl = exTr.GetObject(exDb.BlockTableId,
-                                                OpenMode.ForRead) as BlockTable;
-
-                    // Open the Block table record Model space for read
-                    BlockTableRecord exBlkTblRec;
-                    exBlkTblRec = exTr.GetObject(exBlkTbl[BlockTableRecord.ModelSpace],
-                                                    OpenMode.ForRead) as BlockTableRecord;
+                    using (var trExport = db.TransactionManager.StartTransaction())
+                    {
+                        db.Wblock(newDb, objIds, Point3d.Origin,
+                                            DuplicateRecordCloning.Ignore);
+                        newDb.SaveAs(FileName, DwgVersion.Newest);
+                        trExport.Commit();
+                    }
                 }
+
+                // Dispose without commit, because the
+                // objects need to be in your original point
+                // at the end of the program.
+                trMoveToOrigin.Dispose();
             }
         }
     }
