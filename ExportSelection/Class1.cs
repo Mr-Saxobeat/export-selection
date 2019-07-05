@@ -57,6 +57,9 @@ namespace WBlock
             pStrOpts.AllowSpaces = true;
             PromptResult pStrRes = doc.Editor.GetString(pStrOpts);
 
+            if (pStrRes.Status != PromptStatus.OK)
+                return;
+
             // Set the name of the new file will be created
             // in the same folder of the current file.
             string FileName = Application.GetSystemVariable("DWGPREFIX") + pStrRes.StringResult + ".dwg";
@@ -87,9 +90,26 @@ namespace WBlock
                     {
                         db.Wblock(newDb, objIds, Point3d.Origin,
                                             DuplicateRecordCloning.Ignore);
-                        newDb.SaveAs(FileName, DwgVersion.Newest);
                         trExport.Commit();
                     }
+
+                    // Change the working database to the newDatabasse
+                    HostApplicationServices.WorkingDatabase = newDb;
+
+                    // Set the ZoomExtents 
+                    Application.AcadApplication.GetType().InvokeMember("ZoomExtents",
+                        System.Reflection.BindingFlags.InvokeMethod, null, Application.AcadApplication, null);
+
+                    // Set the Grid variable to show the Grid
+                    Application.SetSystemVariable("GRIDMODE", 1);
+                    newDb.SaveAs(FileName, DwgVersion.Newest);
+
+                    // Change the working database back to the original 
+                    HostApplicationServices.WorkingDatabase = db;
+
+                    // I NEED TO GET THE ORIGINAL ZOOM STATE ----------------------------------------
+                    // TO SET BACK TO THE ORIGINAL DRAWING ------------------------------------------
+                    Application.UpdateScreen();
                 }
 
                 // Dispose without commit, because the
@@ -97,6 +117,8 @@ namespace WBlock
                 // at the end of the program.
                 trMoveToOrigin.Dispose();
             }
+            //SetViewAndGrid(FileName);
         }
     }
 }
+
