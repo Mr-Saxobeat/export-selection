@@ -28,7 +28,7 @@ namespace WBlock
 
     public static class Main
     {
-        [CommandMethod("ExportSelection")]
+        [CommandMethod("NOUT")]
         public static void ExportSelection()
         {
             // Get the document, the database and the editor object
@@ -75,6 +75,8 @@ namespace WBlock
                 // used to move the selected objects.
                 Vector3d acVec3d = minExPt.GetVectorTo(Point3d.Origin);
 
+                // Move objects seleted to the origin point
+                // based on the minimal point from your extents
                 foreach (ObjectId objId in objIds)
                 {
                     Entity e = trMoveToOrigin.GetObject(objId, OpenMode.ForWrite) as Entity;
@@ -92,7 +94,7 @@ namespace WBlock
                         trExport.Commit();
                     }
 
-                    // Records the original View to restore later
+                    // Records the original View to restore it at the end
                     ViewTableRecord originalViewTblRec = doc.Editor.GetCurrentView();
 
                     // Change the working database to the newDatabasse
@@ -109,16 +111,15 @@ namespace WBlock
                     // Change the working database back to the original 
                     HostApplicationServices.WorkingDatabase = db;
 
-                    doc.Editor.SetCurrentView(originalViewTblRec);
-                    doc.Editor.Regen();
+                    ed.SetCurrentView(originalViewTblRec);
+                    ed.Regen();
                 }
 
-                // Dispose without commit, because the
-                // objects need to be in your original point
-                // at the end of the program.
+                // Dispose of original drawing without commit,
+                // because the objects need to be in your
+                // original point at the end of the program.
                 trMoveToOrigin.Dispose();
             }
-            //SetViewAndGrid(FileName);
         }
     }
 }
