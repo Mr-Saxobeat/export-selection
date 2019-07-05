@@ -108,7 +108,6 @@ namespace WBlock
                     Application.SetSystemVariable("GRIDMODE", 1);
                     newDb.SaveAs(FileName, db.OriginalFileVersion);
                     
-
                     // Change the working database back to the original 
                     HostApplicationServices.WorkingDatabase = db;
 
