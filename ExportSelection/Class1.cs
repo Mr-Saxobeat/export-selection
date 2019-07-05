@@ -1,5 +1,4 @@
-﻿using System;
-using Autodesk.AutoCAD.Runtime;
+﻿using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
@@ -93,6 +92,9 @@ namespace WBlock
                         trExport.Commit();
                     }
 
+                    // Records the original View to restore later
+                    ViewTableRecord originalViewTblRec = doc.Editor.GetCurrentView();
+
                     // Change the working database to the newDatabasse
                     HostApplicationServices.WorkingDatabase = newDb;
 
@@ -107,9 +109,8 @@ namespace WBlock
                     // Change the working database back to the original 
                     HostApplicationServices.WorkingDatabase = db;
 
-                    // I NEED TO GET THE ORIGINAL ZOOM STATE ----------------------------------------
-                    // TO SET BACK TO THE ORIGINAL DRAWING ------------------------------------------
-                    Application.UpdateScreen();
+                    doc.Editor.SetCurrentView(originalViewTblRec);
+                    doc.Editor.Regen();
                 }
 
                 // Dispose without commit, because the
