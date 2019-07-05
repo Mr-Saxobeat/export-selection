@@ -106,7 +106,8 @@ namespace WBlock
 
                     // Set the Grid variable to show the Grid
                     Application.SetSystemVariable("GRIDMODE", 1);
-                    newDb.SaveAs(FileName, DwgVersion.Newest);
+                    newDb.SaveAs(FileName, db.OriginalFileVersion);
+                    
 
                     // Change the working database back to the original 
                     HostApplicationServices.WorkingDatabase = db;
