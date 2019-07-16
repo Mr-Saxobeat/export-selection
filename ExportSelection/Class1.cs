@@ -15,7 +15,7 @@ namespace WBlock
         {
             var ext = new Extents3d();
             foreach (var id in ids)
-            {
+            {//teste
                 var ent = tr.GetObject(id, OpenMode.ForRead) as Entity;
                 if (ent != null)
                 {
